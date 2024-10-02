@@ -1,0 +1,177 @@
+#+title: Orgmode
+
+* 文档结构
+
+** headline
+
+\* 一级标题
+\** 二级标题
+ 以此类推
+
+ 动态标题序号:M-x org-num-mode 这会动态显示标题的序号。
+ 可以通过将org-setup-numerated设置为t来全局开启这个选项或者在文件中添加#+startup:num
+
+ 子树下面的空行是其一部分，子树折叠的时候会被隐藏，如果留2行空行则只会隐藏一行空白。
+
+** visibility cycling
+*** global ans local cycling
+
+org使用两个命令来隐藏一部分文本实现outline.
+
+---------------------------------------------------------
+TAB (org-cycle)
+
+切换子树的状态:folded->children->subtree
+---------------------------------------------------------
+S-TAB (org-clobal-cycle)
+C-u TAB
+
+对整个buffer切换状态:overview->contents->showall
+---------------------------------------------------------
+C-u C-u TAB (org-set-startup-visibility)
+
+将buffer切换会startup visibility
+---------------------------------------------------------
+C-u C-u C-u TAB (org-show-all)
+
+显示所有内容包含drawers.
+---------------------------------------------------------
+C-c C-r (org-reveal)
+
+显示光标附近的内容，显示当前entry,接下来的heading和上一层。可以用来定位到sparse tree 命令或者agenda命令之后的位置。使用前缀参数显示每一层上的所有兄弟标题。使用双后缀参数可以
+显示父节点的整个子树。
+---------------------------------------------------------
+C-c C-k (org-show-branches)
+
+显示子树的所有标题而不显示内容。
+---------------------------------------------------------
+C-c TAB (org-show-children)
+
+显示子树的所有直接孩子节点，带前缀参数N会显示到层级N。
+---------------------------------------------------------
+
+C-c C-x b (org-tree-to-indirect-buffer)
+
+在indirect buffer中显示当前的子树.带前缀数值参数N会去level N取这个树.如果N是负数就向上这些层.
+带C-u前缀不会移除之前使用的indirect buffer.
+
+---------------------------------------------------------
+C-c C-x v (org-copy-visible)
+
+将区域内的可见文件复制到kill ring.
+
+
+*** initial visibility
+
+在emacs初次打开org文件时初始状态会设置成showeverything,所有内容都可见，可以通过org-startup-folded开设置，或者添加下面的行：
+
+#+BEGIN_EXAMPLE
+#+STARTUP: overview
+#+STARTUP: content
+#+STARTUP: showall
+#+STARTUP: show2levels
+#+STARTUP: showeverything
+
+#+END_EXAMPLE
+
+C-u C-u TAB
+
+切换到buffer的初始可见度，由startup option和VISIBILITY属性共同决定。
+
+*** catching invisible edits
+有时我们意外的编辑了buffer的不可见部分，可能会不清楚什么内容被暗中编辑了以及如何撤销。默认情况下org将这类编辑限制在有限的用户命令中，通过自定义org-fold-catch-invisible-edit-commands可以控制这些命令。
+
+一个编辑命令是否是危险的通过org-fold-catch-invisible-edit来决定。
+
+
+** motion
+
+C-c C-n (org-next-visible-heading)
+下一个heading
+-----------------------------------------
+C-c C-p (org-previous-visible-heading)
+上一个heading
+-----------------------------------------
+C-c C-f (org-forward-heading-same-level)
+下一个相同层级的heading
+
+-----------------------------------------
+C-c C-b (org-backward-heading-same-level)
+前一个相同层级的heading
+
+-----------------------------------------
+C-c C-u (outline-up-heading)
+回到上一层级的heading
+-----------------------------------------
+C-c C-j (org-goto)
+在不改变当前outline可见性的基础上跳到其他地方。可以使用下列快捷键找到目的地。
+
+TAB             cycle visibility
+DOWN/UP         上一个或者下一个可见headline
+RET             选择目的地
+/               进行稀疏树搜索
+
+
+
+** structure editing
+
+
+
+
+** sparse tree
+
+** plain list
+
+
+** drawers
+
+
+** blocks
+* TABLES
+
+* Hyperlinks
+
+* TODO Items
+
+
+
+* Tags
+
+
+
+* Properties and Columns
+
+
+
+* Dates and Times
+
+
+
+* Refiling and Archiving
+
+
+
+* Capture and Attachments
+
+
+* Agend views
+
+
+* Markup for rich contents
+
+
+
+* Exporting
+
+
+* Publishing
+
+
+* Citation handling
+
+
+* Source code
+
+
+
+* Miscellaneous

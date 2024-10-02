@@ -1,0 +1,5 @@
+#+title: Magit
+
+* 状态buffer
+
+在git仓库中使用C-x g命令，等效于git status,可以显示当前仓库的状态。
