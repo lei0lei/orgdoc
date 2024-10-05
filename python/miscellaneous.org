@@ -1,0 +1,93 @@
+#+title: Miscellaneous
+#+STARTUP: overview
+
+
+* 文档化
+
+
+* mock
+
+
+
+* 深拷贝和浅拷贝
+
+
+
+* GIL
+
+
+
+* Itertools
+
+
+
+* args & kwargs
+
+
+* generator & yield
+
+
+* 作用域
+
+
+* 传引用
+
+
+
+
+* mapings
+
+
+* LRU缓存策略
+
+
+* mmap
+
+* RE
+
+
+* duck typing
+
+* assert
+
+
+
+* bnf
+
+* PEP8
+
+
+* mutable vs immutable
+
+* Files
+
+
+* 内存管理
+
+
+* decorator
+
+
+* zen of python
+
+
+* *和/
+
+* pycache文件夹
+
+
+* pathlib
+
+
+* exec()
+
+* datetime
+
+
+* interface
+
+* 错误处理
+
+* loggings
+
+* 工厂方法模式

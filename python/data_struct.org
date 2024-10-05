@@ -1,0 +1,47 @@
+#+title: Data Struct
+
+* list & tuples
+
+* Enum
+
+
+* Array
+
+* Sequences
+
+
+* Basic types
+
+* string
+
+
+* stacks,queue,priority queue
+
+* 常见数据结构
+
+* Dictionary
+
+* sets
+
+* 排序算法
+
+* Encodings
+
+
+* heapq
+
+* binary search
+
+* namedtuple
+
+* hash table
+
+* defaultdict
+
+* collections
+
+
+* chainmap
+
+
+* deque

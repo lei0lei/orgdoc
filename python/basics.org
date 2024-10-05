@@ -1,0 +1,1096 @@
+#+TITLE: Basics
+#+STARTUP: overview
+* Traceback
+
+当代码中存在异常的时候就会输出tracback,虽然有些复杂但是其中包含了不少诊断信息以及帮助我们修复异常。
+
+** 什么是Traceback
+
+traceback包含了代码特定点的函数调用report,也可以叫做stack trace, stack traceback,backtrace,在python中叫做traceback.
+
+当程序有异常时一般会输出traceback：
+
+#+begin_src python
+
+# example.py
+def greet(someone):
+    print('Hello, ' + someon)
+
+greet('Chad')
+
+#+end_src
+
+运行的时候就会出现traceback:
+
+#+BEGIN_SRC shell
+#python example.py
+Traceback (most recent call last):
+  File "/path/to/example.py", line 4, in <module>
+    greet('Chad')
+  File "/path/to/example.py", line 2, in greet
+    print('Hello, ' + someon)
+NameError: name 'someon' is not defined
+#+END_SRC
+
+代码中的traceback和REPL中的通常会有些差距，REPL一般不会指明模块名而是使用`<stdin>` .
+
+下面看一些traceback:
+
+#+BEGIN_SRC python
+# greetings.py
+def who_to_greet(person):
+    return person if person else input('Greet who? ')
+
+def greet(someone, greeting='Hello'):
+    print(greeting + ', ' + who_to_greet(someone))
+
+def greet_many(people):
+    for person in people:
+        try:
+            greet(person)
+        except Exception:
+            print('hi, ' + person)
+#+END_SRC
+
+调用的时候使用错误的关键字参数比如greet('Chad', greting='Yo')，就可以看到traceback.
+
+#+BEGIN_SRC python
+$ python example.py
+Traceback (most recent call last):
+  File "/path/to/greetings.py", line 19, in <module>
+    greet('Chad', greting='Yo')
+TypeError: greet() got an unexpected keyword argument 'greting'$ python example.py
+
+#+END_SRC
+
+不过traceback并不总是提供有用的信息，并且在一个异常中可能会在异常处理代码中出现其他异常。
+
+** 通常有哪些traceback
+*** AttributeError
+
+一般在试图访问某个对象的属性但又没有定义这个属性的时候会出现:
+
+#+BEGIN_SRC python
+
+>>> an_int = 1
+>>> an_int.an_attribute
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'int' object has no attribute 'an_attribute'
+
+#+END_SRC
+
+一般出现这种错误意味着正在使用错误的类型。
+
+*** ImportError
+
+一般出现在import语句出问题的情况，通常会遇着这种错误或者其子类ModuleNotFoundError.
+
+#+BEGIN_SRC python
+>>> import asdf
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'asdf'
+>>> from collections import asdf
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ImportError: cannot import name 'asdf'
+
+#+END_SRC
+
+*** IndexError
+试图访问一个序列的错误索引的时候会出现这种问题:
+
+#+BEGIN_SRC python
+>>> a_list = ['a', 'b']
+>>> a_list[3]
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+IndexError: list index out of range
+#+END_SRC
+
+*** KeyError
+
+类似于IndexError,我们试图访问不在mapping中的key.
+
+#+BEGIN_SRC python
+>>> a_dict['b']
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+KeyError: 'b'
+#+END_SRC
+
+*** NameError
+
+在引用代码中没有的变量、模块、类、函数、或者其他名字时会出现:
+
+#+BEGIN_SRC python
+>>> def greet(person):
+...     print(f'Hello, {persn}')
+>>> greet('World')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "<stdin>", line 2, in greet
+NameError: name 'persn' is not defined
+#+END_SRC
+
+有的时候参数名给错了也会出现这种问题。
+
+*** SytaxError
+
+语法错误就意味着..语法错误。
+
+*** TyepError
+
+这意味着代码试图在对象上做非法操作。
+
+#+BEGIN_SRC python
+>>> 1 + '1'
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: unsupported operand type(s) for +: 'int' and 'str'
+>>> '1' + 1
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: must be str, not int
+>>> len(1)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: object of type 'int' has no len()
+
+#+END_SRC
+
+*** ValueError
+当对象的值不正确时会出现这个问题，可以视为序列的索引错误导致的IndexError.
+#+BEGIN_SRC python
+>>> a, b, c = [1, 2]
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ValueError: not enough values to unpack (expected 3, got 2)
+>>> a, b = [1, 2, 3]
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ValueError: too many values to unpack (expected 2)
+
+#+END_SRC
+** 如何记录traceback
+
+一般出现traceback意味着需要做些什么，第一步肯定是修复但是有时会出现预料不到的问题或者错误的输入。有的时候需要忽略这些问题病记录对应的traceback.下面是一个requests库的例子:
+#+BEGIN_SRC python
+# urlcaller.py
+import sys
+import requests
+
+response = requests.get(sys.argv[1])
+
+print(response.status_code, response.content)
+#+END_SRC
+
+有的时候给定的URL并不存在或者服务器当机了就会出现ConnectionError 异常并打印traceback.
+
+如果放在try...except代码块中就可以让脚本忽略错误继续运行:
+
+#+BEGIN_SRC python
+# urlcaller.py
+...
+try:
+    response = requests.get(sys.argv[1])
+except requests.exceptions.ConnectionError:
+    print(-1, 'Connection Error')
+else:
+    print(response.status_code, response.content)
+
+#+END_SRC
+
+有的时候我们希望log这些异常可以这样做:
+#+BEGIN_SRC python
+# urlcaller.py
+import logging
+import sys
+import requests
+
+logger = logging.getLogger(__name__)
+
+try:
+    response = requests.get(sys.argv[1])
+except requests.exceptions.ConnectionError as e:
+    logger.exception()
+    print(-1, 'Connection Error')
+else:
+    print(response.status_code, response.content)
+
+#+END_SRC
+
+* 常量
+常量一般意味着在程序运行期间名字绑定的值不会发生改变。但是python没有定义常量的直接语法，常量是永远不变的变量。为了不让常量的值发生改变，有一个命名传统是使用全大写字母。
+
+** 常量和变量
+变量是某个符号或者名字和某个包含值、对象或者数据的内存地址关联，在执行的时候这个地址的内容会发生改变。变量通常伴随着两种行为:
+- 访问值
+- 赋新值
+
+访问值只需要引用变量的名字即可。赋值一般使用赋值语句和赋值操作符。
+
+常量表示程序运行期间，名字绑定的值不发生改变。类似于变量，可以定义整型常量、浮点常量、字符常量、字符串常量等。定义常量之后只能在上面进行访问但是不能改变。
+
+为何要使用常量?
+
+常量可以防止代码中某些值发生意外的改变，同时增加可读性和可维护性。除此之外，常量是只读的，因此也是线程安全的。
+
+** 定义常量
+
+严格的来讲python没有定义常量的语法，因此需要定义一个从不改变的变量然后避免在上面执行赋值操作。
+*** 用户定义的常量
+要让别人把给定值视为常量，要使用命名传统-全大写。
+#+BEGIN_SRC python
+PI = 3.14
+MAX_SPEED = 300
+DEFAULT_COLOR = "\033[1;34m"
+WIDTH = 20
+API_TOKEN = "593086396372"
+BASE_URL = "https://api.example.com"
+DEFAULT_TIMEOUT = 5
+ALLOWED_BUILTINS = ("sum", "max", "min", "abs")
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    ...
+]
+#+END_SRC
+
+定义常量的时候要避免使用缩写，不然别人不知道名字的意义，避免使用单字母的名字和通用的名字比如NUMBER和MAGNITUDE.
+
+*** 模块层级的dunder常量
+
+模块层级的常量有特殊的名字，以双下划线开头和结尾。一些名字比如`__all__`,`__author__`,`__version__`,一般在整个项目中视为常量。
+
+下面是一个例子:
+#+BEGIN_SRC python
+# greeting.py
+
+"""This module defines some module-level dunder names."""
+
+from __future__ import barry_as_FLUFL
+
+__all__ = ["greet"]
+__author__ = "Real Python"
+__version__ = "0.1.0"
+
+import sys
+
+def greet(name="World"):
+    print(f"Hello, {name}!")
+    print(f"Greetings from version: {__version__}!")
+    print(f"Yours, {__author__}!")
+#+END_SRC
+
+`__all__`定义了执行`from module import *`时所引入的名字。因此其他的代码无法访问`__author__`和`__version__`.但是greet函数是可以访问dunder name的:
+#+BEGIN_SRC python
+>>> from greeting import *
+
+>>> greet()
+Hello, World!
+Greetings from version: 0.1.0!
+Yours, Real Python!
+
+#+END_SRC
+
+** 使用常量
+magic number指代码中直接出现不用解释的数字。这些数字使得程序难以阅读和维护比如：
+#+BEGIN_SRC python
+def compute_net_salary(hours):
+    return hours * 35 * (1 - (0.04 + 0.1))
+
+#+END_SRC
+改成下面这样是不是容易理解了？
+
+#+BEGIN_SRC python
+HOURLY_SALARY = 35
+SOCIAL_SECURITY_TAX_RATE = 0.04
+FEDERAL_TAX_RATE = 0.10
+
+def compute_net_salary(hours):
+    return (
+        hours
+        * HOURLY_SALARY
+        * (1 - (SOCIAL_SECURITY_TAX_RATE + FEDERAL_TAX_RATE))
+    )
+#+END_SRC
+
+另一个使用常量的情况是程序中需要循环使用某个值，改变这个值会很麻烦，但是又需要再所有地方改变这个值。
+
+另一个使用情况是给函数，方法和类提供默认的参数值，在标准库中很常见。比如处理zip文件的ZipFIle,类构造器需要compression参数，可以选择一系列的压缩方法。这个参数是可选的，使用ZIP_STORED作为默认值，表示默认不压缩数据。ZIP_STORED就是一个常量，放了一个数值表示未压缩数据。我们还会找到其他压缩算法比如ZIP_PDFLATED。
+
+另一个适合使用常量的例子是几个函数共享一个参数，比如链接数据库:
+
+#+BEGIN_SRC python
+import sqlite3
+from sqlite3 import Error
+
+def create_database(db_path):
+    # Code to create the initial database goes here...
+
+def create_connection(db_path):
+    # Code to create a database connection goes here...
+
+def backup_database(db_path):
+    # Code to back up the database goes here...
+#+END_SRC
+
+如果我们想要提供一个默认的数据库路径：
+
+#+BEGIN_SRC python
+import sqlite3
+from sqlite3 import Error
+
+DEFAULT_DB_PATH = "/path/to/database.sqlite"
+
+def create_database(db_path=DEFAULT_DB_PATH):
+    # Code to create the initial database goes here...
+
+def create_connection(db_path=DEFAULT_DB_PATH):
+    # Code to create a database connection goes here...
+
+def backup_database(db_path=DEFAULT_DB_PATH):
+    # Code to back up the database goes here...
+#+END_SRC
+
+有的时候我们会想要把特定行为的对象给类、方法或者函数，这叫做duck typing. 假设我们的代码会提供一个所需对象的标准实现。   这种情况下我们可以使用常量定义默认的对象然后把这个常量作为参数。
+
+#+BEGIN_SRC python
+# file_handler.py
+
+from readers import DEFAULT_READER
+
+class FileHandler:
+    def __init__(self, file, reader=DEFAULT_READER):
+        self._file = file
+        self._reader = reader
+
+    def read(self):
+        self._reader.read(self._file)
+
+    # FileHandler implementation goes here...
+#+END_SRC
+
+#+BEGIN_SRC python
+# readers.py
+
+class _DefaultReader:
+    def read(self, file):
+        with open(file, mode="r", encoding="utf-8") as file_obj:
+            for line in file_obj:
+                print(line)
+
+DEFAULT_READER = _DefaultReader()
+
+#+END_SRC
+
+** 实际项目中使用常量
+在实际中我们要如何处理和组织常量?我们可以把常量放在:
+- 和使用的地方相同的为止
+- 给项目级的常量一个单独的模块
+- 配置文件
+- 一些环境变量
+
+第一种情况比如:
+
+#+BEGIN_SRC python
+# calculations.py
+
+"""This module implements custom calculations."""
+
+# Imports go here...
+import numpy as np
+
+# Constants go here...
+PI = 3.141592653589793
+EULER_NUMBER = 2.718281828459045
+TAU = 6.283185307179586
+
+# Your custom calculations start here...
+def circular_land_area(radius):
+    return PI * radius**2
+
+def future_value(present_value, interest_rate, years):
+    return present_value * EULER_NUMBER ** (interest_rate * years)
+
+# ...
+#+END_SRC
+
+把常量和使用的代码定义在一个模块中。
+
+第二种情况比如:
+
+#+BEGIN_SRC python
+# constants.py
+
+"""This module defines project-level constants."""
+
+PI = 3.141592653589793
+EULER_NUMBER = 2.718281828459045
+TAU = 6.283185307179586
+#+END_SRC
+
+#+BEGIN_SRC python
+# calculations.py
+
+"""This module implements custom calculations."""
+
+# Imports go here...
+import numpy as np
+
+from . import constants
+
+# Your custom calculations start here...
+def circular_land_area(radius):
+    return constants.PI * radius**2
+
+def future_value(present_value, interest_rate, years):
+    return present_value * constants.EULER_NUMBER ** (interest_rate * years)
+
+# ...
+#+END_SRC
+
+第三种情况存储在配置文件中:
+#+BEGIN_SRC python
+; constants.ini
+
+[CONSTANTS]
+PI=3.141592653589793
+EULER_NUMBER=2.718281828459045
+TAU=6.283185307179586
+#+END_SRC
+
+可以使用configparser模块读取INI文件
+
+#+BEGIN_SRC python
+# calculations.py
+
+"""This module implements custom calculations."""
+
+# Imports go here...
+from configparser import ConfigParser
+
+import numpy as np
+
+constants = ConfigParser()
+constants.read("path/to/constants.ini")
+
+# Your custom calculations start here...
+def circular_land_area(radius):
+    return float(constants.get("CONSTANTS", "PI")) * radius**2
+
+def future_value(present_value, interest_rate, years):
+    return (
+        present_value * float(constants.get(
+            "CONSTANTS",
+            "EULER_NUMBER"
+        ))) ** (interest_rate * years)
+
+# ...
+#+END_SRC
+
+注意配置文件中存储的都是字符串，可能需要进行对应的变换。
+
+把常量放在环境变量中一般需要定义为系统变量，通常用来进行项目的部署，或者有时不方便直接放在源代码中。在使用时可以使用environ字典访问:
+
+#+BEGIN_SRC python
+>>> import os
+
+>>> os.environ["API_TOKEN"]
+'593086396372'
+#+END_SRC
+
+
+
+** 其他常量
+除了用户定义的常量，python还定义了一些可以作为常量的内部名字，这些名字是严格意义上的常量，解释器运行过程中无法修改。
+
+*** 内建常量
+
+True和False是两个常量，也是int的实例，True的值是多少，False是。
+
+#+BEGIN_SRC python
+>>> True
+True
+>>> False
+False
+
+>>> isinstance(True, int)
+True
+>>> isinstance(False, int)
+True
+
+>>> int(True)
+1
+>>> int(False)
+0
+
+>>> True = 42
+    ...
+SyntaxError: cannot assign to True
+
+>>> True is True
+True
+>>> False is False
+True
+#+END_SRC
+
+True和False是严格的常量，也就是无法被赋值，否则会有语法错误，这两个值也是singleton对象。
+
+None也是野格常量：
+#+BEGIN_SRC python
+>>> None is None
+True
+
+>>> None = 42
+    ...
+SyntaxError: cannot assign to None
+#+END_SRC
+
+None一般作为函数或者方法或者类构造器的默认参数值，还会作为函数的隐式返回值。
+
+...是另一个常量，其值为Ellipsis:
+
+#+BEGIN_SRC python
+ >>> Ellipsis
+Ellipsis
+
+>>> ...
+Ellipsis
+
+>>> ... is Ellipsis
+True
+#+END_SRC
+
+ ...可以作为占位或者代替pass语句。
+
+#+BEGIN_SRC python
+>>> def do_something():
+...     ...  # TODO: Implement this function later
+...
+
+>>> class CustomException(Exception): ...
+...
+>>> raise CustomException("some error message")
+Traceback (most recent call last):
+    ...
+CustomException: some error message
+
+>>> # A tuple of integer values
+>>> numbers: tuple[int, ...]
+#+END_SRC
+
+接下来是__debug__常量，默认为True.
+
+#+BEGIN_SRC python
+>>> __debug__
+True
+
+>>> __debug__ = False
+    ...
+SyntaxError: cannot assign to __debug__
+#+END_SRC
+
+debug常量和assert语句相关，如果debug为True,则会运行assert,反之不会运行。要想设置为Flase，必须让python运行在optimized mode下，可以使用-0 或者-00参数。
+
+*** 内部Dunder name
+python有一些列的内部dunder name可以视为常量。这里我们只需要知道__name__和__file__。
+__name__的内容和运行代码的方式有关，在导入一个模块的时候python内部会把__name__设置为包含正在导入的模块名的string.
+
+#+BEGIN_SRC python
+# sample_name.py
+
+print(f"The type of __name__ is: {type(__name__)}")
+print(f"The value of __name__ is: {__name__}")
+#+END_SRC
+
+#+BEGIN_SRC python
+$ python -c "import sample_name"
+The type of __name__ is: <class 'str'>
+The value of __name__ is: sample_name
+#+END_SRC
+
+
+__file__包含当前正在导入或者执行的文件的路径。
+#+BEGIN_SRC python
+# sample_file.py
+
+print(f"The type of __file__ is: {type(__file__)}")
+print(f"The value of __file__ is: {__file__}")
+#+END_SRC
+
+#+BEGIN_SRC python
+$ python -c "import sample_file"
+The type of __file__ is: <class 'str'>
+The value of __file__ is: /path/to/sample_file.py
+#+END_SRC
+
+*** 一些数学常量
+#+BEGIN_SRC python
+>>> import math
+
+>>> # Euler's number (e)
+>>> math.e
+2.718281828459045
+
+>>> # Pi (π)
+>>> math.pi
+3.141592653589793
+
+>>> # Infinite (∞)
+>>> math.inf
+inf
+
+>>> # Not a number (NaN)
+>>> math.nan
+nan
+
+>>> # Tau (τ)
+>>> math.tau
+6.283185307179586
+#+END_SRC
+
+string模块定义了一些有用的常量比如:
+|-----------------+------------------------------------------------------------------------------------------------------------------- |
+| ascii_lowercase | abcdefghijklmnopqrstuvwxyz                                                                                         |
+| ascii_uppercase | ABCDEFGHIJKLMNOPQRSTUVWXYZ                                                                                         |
+| ascii_letters   | ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz                                                               |
+| digits          | 0123456789                                                                                                         |
+| hexdigits       | 0123456789abcdefABCDEF                                                                                             |
+| octdigits       | 01234567                                                                                                           |
+| punctuation     | !"#$%&'()*+,-./:;<=>?@[\]^_`{                                                                                  }~  |
+| whitespace      | The combination of the space character, horizontal and vertical tab, linefeed, carriage return, and form feed      |
+| printable       | The combination of digits, ascii_letters, punctuation, and whitespace                                              |
+
+** type-annotating constants
+
+python3.8之后typing模块有一个Final类可以type-annotate 常量。这个类可以帮助静态检查。
+#+BEGIN_SRC python
+from typing import Final
+
+MAX_SPEED: Final[int] = 300
+DEFAULT_COLOR: Final[str] = "\033[1;34m"
+ALLOWED_BUILTINS: Final[tuple[str, ...]] = ("sum", "max", "min", "abs")
+
+# Later in your code...
+MAX_SPEED = 450  # Cannot assign to final name "MAX_SPEED" mypy(error)
+#+END_S
+
+** strict constants
+前面说到常量在python中依赖于开发者的共识，python中也可以有一种机制保证严格常量。下面可以看到使用自定义类并将其作为常量的命名空间。
+
+*** .__slots__属性
+
+python类允许我们定义一个叫做.__slots__的特殊类属性，可以存储一个名字列表作为实例属性。我们无法给带.__slots__属性的类添加新的属性，因为.__slots__()防止创建.__dict__属性的实例，这样可以实现内存优化。
+
+#+BEGIN_SRC python
+
+>>> class ConstantsNamespace:
+...     __slots__ = ()
+...     PI = 3.141592653589793
+...     EULER_NUMBER = 2.718281828459045
+...
+
+>>> constants = ConstantsNamespace()
+
+>>> constants.PI
+3.141592653589793
+>>> constants.EULER_NUMBER
+2.718281828459045
+
+>>> constants.PI = 3.14
+Traceback (most recent call last):
+    ...
+AttributeError: 'ConstantsNamespace' object attribute 'PI' is read-only
+
+#+END_SRC
+*** @property 装饰器
+可以使用@property装饰器给常量创建一个命名空间。讲常量定义为属性而不提供setter方法即可实现。
+#+BEGIN_SRC python
+>>> class ConstantsNamespace:
+...     @property
+...     def PI(self):
+...         return 3.141592653589793
+...     @property
+...     def EULER_NUMBER(self):
+...         return 2.718281828459045
+...
+
+>>> constants = ConstantsNamespace()
+
+>>> constants.PI
+3.141592653589793
+>>> constants.EULER_NUMBER
+2.718281828459045
+
+>>> constants.PI = 3.14
+Traceback (most recent call last):
+    ...
+AttributeError: can't set attribute 'PI'
+#+END_SRC
+
+*** namedtuple()工厂函数
+collections模块提供一个工厂函数叫做namedtuple(),可以创建可以带name field的tuple的子类。然后使用dot进行访问比如tuple_obj.attribute.
+
+和tuple一样，namedtuple实例是immutable,也就是无法修改。
+#+BEGIN_SRC python
+>>> from collections import namedtuple
+
+>>> ConstantsNamespace = namedtuple(
+...     "ConstantsNamespace", ["PI", "EULER_NUMBER"]
+... )
+>>> constants = ConstantsNamespace(3.141592653589793, 2.718281828459045)
+
+>>> constants.PI
+3.141592653589793
+>>> constants.EULER_NUMBER
+2.718281828459045
+
+>>> constants.PI = 3.14
+Traceback (most recent call last):
+    ...
+AttributeError: can't set attribute
+#+END_SRC
+
+
+
+*** @dataclass装饰器
+dataclass模块和@dataclass装饰器联合使用也可以实现。@dataclass装饰器接受一个frozen参数可以讲data class标记为immutable.
+
+#+BEGIN_SRC python
+>>> from dataclasses import dataclass
+
+>>> @dataclass(frozen=True)
+... class ConstantsNamespace:
+...     PI = 3.141592653589793
+...     EULER_NUMBER = 2.718281828459045
+...
+
+>>> constants = ConstantsNamespace()
+
+>>> constants.PI
+3.141592653589793
+>>> constants.EULER_NUMBER
+2.718281828459045
+
+>>> constants.PI = 3.14
+Traceback (most recent call last):
+    ...
+dataclasses.FrozenInstanceError: cannot assign to field 'PI'
+#+END_SRC
+
+*** .__setattr__()方法
+python类可以让我们定义一个特殊方法.__setattr__()。来自定义属性的赋值过程，python会自动在每次属性赋值的时候调用这个方法，覆盖这个方法可以阻止所有的属性赋值。
+
+#+BEGIN_SRC python
+>>> class ConstantsNamespace:
+...     PI = 3.141592653589793
+...     EULER_NUMBER = 2.718281828459045
+...     def __setattr__(self, name, value):
+...         raise AttributeError(f"can't reassign constant '{name}'")
+...
+
+>>> constants = ConstantsNamespace()
+
+>>> constants.PI
+3.141592653589793
+>>> constants.EULER_NUMBER
+2.718281828459045
+
+>>> constants.PI = 3.14
+Traceback (most recent call last):
+    ...
+AttributeError: can't reassign constant 'PI'
+#+END_SRC
+
+* 变量
+** 变量赋值
+变量可以视为一个名字关联到一个特定的对象。创建变来那个使用赋值操作符就行:
+#+BEGIN_SRC python
+>>> n = 300
+#+END_SRC
+我们可以改变这个变量再继续使用:
+#+BEGIN_SRC python
+n = 1000
+print(n)
+
+n
+#+END_SRC
+python支持链式赋值:
+#+BEGIN_SRC python
+>>> a = b = c = 300
+>>> print(a, b, c)
+300 300 300
+#+END_SRC
+
+** 变量类型
+大多数编程语言中变量都是有类型的，在变量的生命周期内赋给变量的值必须是这个类型。python没有这个限制:
+#+BEGIN_SRC python
+>>> var = 23.5
+>>> print(var)
+23.5
+
+>>> var = "Now I'm a string"
+>>> print(var)
+Now I'm a string
+#+END_SRC
+
+** 对象引用
+变量赋值的时候发生了什么?python是一个高度面向对象的语言，所有东西都是对象。比如:
+#+BEGIN_SRC python
+>>> print(300)
+300
+#+END_SRC
+执行这条语句时发生了下面的事情:
+- 创建整型对象
+- 将300赋给这个对象
+- 显示在控制台上
+
+#+BEGIN_SRC python
+>>> type(300)
+<class 'int'>
+#+END_SRC
+python变量是一个对象的引用或者指针，对象一旦被赋值就可以通过这个名字进行引用。
+考虑下面这个例子:
+
+#+BEGIN_SRC python
+>>> m = n
+#+END_SRC
+这句话发生了什么?Python不会创建另一个对象，而是创建一个符号名或者引用,m,指向n指向的同一个对象。
+
+如果我们重新把m和n指向新的对象，旧的对象会怎么样?当然是无法访问。一个对象的生命周期从创建开始，至少有一个引用，在整个生命周期中可能会新建或者删除引用，当引用数变为0时就不再可以访问。python会重新分配内存，这个给哦成就是垃圾收集。
+
+** 对象identity
+python中的每个对象在创建时都有一个独一无二的标识符。这两不会有两个对象有相同的标识符。一个对象被垃圾收集之后对应的标识数字就会被回收复用。内建的id()可以返回标识符数字
+#+BEGIN_SRC python
+>>> n = 300
+>>> m = n
+>>> id(n)
+60127840
+>>> id(m)
+60127840
+
+>>> m = 400
+>>> id(m)
+60127872
+#+END_SRC
+
+注意下面这段代码:
+#+BEGIN_SRC python
+>>> m = 30
+>>> n = 30
+>>> id(m)
+1405569120
+>>> id(n)
+1405569120
+#+END_SRC
+
+尽管m和n是单独赋值的但是又相同id,这是因为python会对[-5,256]的证书进行优化，在程序执行期间进行复用。
+
+** 变量名
+变量名一般是任意的长度包含大小写数字以及下划线的名字，但是首字母不能是数字。为了方便一般有一下几种写法:
+
+- camel case:比如numberOfCollegeGraduates
+- Pascal case: NumberOfCollegeGraduates
+- Snake case: number_of_college_graduates
+
+一些命名习惯可以查看PEP8。一般建议snake case用于函数和变量名，pascal case用于类名。
+
+** 保留字
+保留的关键在是不能用在变量名中的,python3.6有33个保留字:
+|----------+---------+----------+--------|
+| False    | def     | if       | raise  |
+| None     | del     | import   | return |
+| True     | elif    | in       | try    |
+| and      | else    | is       | while  |
+| as       | except  | lambda   | with   |
+| assert   | finally | nonlocal | yield  |
+| break    | for     | not      |        |
+| class    | from    | or       |        |
+| continue | global  | pass     |        |
+
+
+* switch/case
+* while循环
+* for循环
+* DO-while循环
+
+如果熟悉C或者C++这类语言，一定会熟悉do-while的循环结构。这个控制流会至少执行一次代码块，无论循环条件是真还是假。因为循环条件在每个迭代的最后才会求值。
+
+比如下面的例子:
+
+#+BEGIN_SRC c
+#include <stdio.h>
+
+int main() {
+
+    int number;
+    do {
+        printf("Enter a positive number: ");
+        scanf("%d", &number);
+        printf("%d\n", number);
+    } while (number > 0);
+    return 0;
+}
+
+#+END_SRC
+
+`number>0`这个循环条件可以保证循环体至少运行一次。使用do-while循环的一个原因是效率。比如，如果循环体要运行n次，do-while的条件也运行n次，但是普通循环要运行n+1次。
+
+Python没有do-while循环，显然开发者没有找到好的语法结构，不过总是有其他方法来模拟这种控制流。
+
+** 用while-break模拟
+最常见的模拟do-while的方法是使用无限的while循环以及break语句。
+
+#+BEGIN_SRC python
+
+while True:
+    # do something
+    if condition:
+        break
+#+END_SRC
+
+需要注意的是这个python不是完全安全的，如果在break之前使用continue语句就会陷入无限循环。
+
+** 实际中的do-while循环
+最常见的do-while循环是接受和处理用户输入。比如下面的哦子让用户猜数字:
+
+#+BEGIN_SRC python
+
+# guess.py
+
+from random import randint
+
+LOW, HIGH = 1, 10
+
+secret_number = randint(LOW, HIGH)
+clue = ""
+
+while True:
+    guess = input(f"Guess a number between {LOW} and {HIGH} {clue} ")
+    number = int(guess)
+    if number > secret_number:
+        clue = f"(less than {number})"
+    elif number < secret_number:
+        clue = f"(greater than {number})"
+    else:
+        break
+
+print(f"You guessed it! The secret number is {number}")
+
+#+END_SRC
+
+** do-while和while的区别
+
+do-while和while的主要区别是前者会至少执行一次代码块。
+
+** 其他的模拟方法
+
+*** 在循环之前进行操作
+
+把循环体先放在循环之前运行一次:
+
+#+BEGIN_SRC python
+condition = do_something()
+
+while condition:
+    condition = do_something()
+#+END_SRC
+
+之前的例子就可以改写为:
+#+BEGIN_SRC python
+
+# guess.py
+
+from random import randint
+
+LOW, HIGH = 1, 10
+
+secret_number = randint(LOW, HIGH)
+clue = ""
+
+def process_move(clue):
+    user_input = input(f"Guess a number between {LOW} and {HIGH} {clue} ")
+    number = int(user_input)
+    if number > secret_number:
+        clue = f"(less than {number})"
+    elif number < secret_number:
+        clue = f"(greater than {number})"
+    return number, clue
+
+number, clue = process_move(clue)  # First iteration
+
+while number != secret_number:
+    number, clue = process_move(clue)
+
+print(f"You guessed it! The secret number is {number}")
+
+#+END_SRC
+
+*** 使用无限循环
+
+#+BEGIN_SRC python
+
+do = True
+
+while do:
+    do_something()
+    if condition:
+        do = False
+
+#+END_SRC
+
+这种方式可读性上会更好。
+
+* 条件语句
+* main()
+* input/output/string
+* print函数
+* 函数
+* 操作符
+** 赋值
+
+** and
+
+
+** :=
+
+** not
+
+** or
+
+** %
+
+** 位操作符
+
+* python的词法结构
+* lazy evaluation
+* sleep()
+* `!=` 和 `is not`
+* lambda函数
+* reduce()
+* if __name__ == '__main__'
+* 内联函数
+* filter
+* any()
+* sum()
+* 内建函数
+* map()
+* range()
+* enumerate()
+* self类型
+* 全局变量
+* 获取目录下的所有文件和文件夹
+* eval()
+* 单下划线和双下换线
+* len()
+* del
+* type hints
+* raw string
+* Descriptors
+* zip()函数
+* 可选参数
+* pass语句
